@@ -2,7 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const { appRoutes } = require('./utils/constants');
-const router = require('./routes/users');
+const usersRouter = require('./routes/users');
+const cardsRouter = require('./routes/cards');
 
 const { PORT = 3000 } = process.env;
 
@@ -14,7 +15,17 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(appRoutes.root, router);
+
+app.use((req, _res, next) => {
+  req.user = {
+    _id: '614ccab2f74dc61c9b724d45',
+  };
+
+  next();
+});
+
+app.use(appRoutes.root, usersRouter);
+app.use(appRoutes.root, cardsRouter);
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
