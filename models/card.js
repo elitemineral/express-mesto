@@ -17,17 +17,19 @@ const cardSchema = new mongoose.Schema({
     ref: dataModels.user,
     required: true,
   },
-  likes: {
-    type: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: dataModels.user,
-      required: true,
-    }],
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: dataModels.user,
+    required: true,
     default: [],
-  },
+  }],
   createdAt: {
     type: Date,
     default: Date.now(),
+  },
+}, {
+  toJSON: {
+    versionKey: false,
   },
 });
 
