@@ -19,9 +19,7 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
 }, {
-  toJSON: {
-    versionKey: false,
-  },
+  versionKey: false,
 });
 
 module.exports = mongoose.model(dataModels.user, userSchema);
