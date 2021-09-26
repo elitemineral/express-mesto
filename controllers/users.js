@@ -1,16 +1,9 @@
 const User = require('../models/user');
-const { statusCodes } = require('../utils/constants');
 
 module.exports.getUser = (req, res, next) => {
   User.findById(req.params.userId)
-    .then((user) => {
-      if (!user) {
-        res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
-        return;
-      }
-
-      res.send(user);
-    })
+    .orFail()
+    .then((user) => res.send(user))
     .catch((err) => next(err));
 };
 
@@ -39,14 +32,8 @@ module.exports.setUserInfo = (req, res, next) => {
       runValidators: true,
     },
   )
-    .then((user) => {
-      if (!user) {
-        res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
-        return;
-      }
-
-      res.send(user);
-    })
+    .orFail()
+    .then((user) => res.send(user))
     .catch((err) => next(err));
 };
 
@@ -56,6 +43,7 @@ module.exports.setUserAvatar = (req, res, next) => {
     { avatar: req.body.avatar },
     { new: true },
   )
+    .orFail()
     .then((user) => res.send(user))
     .catch((err) => next(err));
 };

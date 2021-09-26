@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
 
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
@@ -14,6 +15,7 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 
 const app = express();
 
+app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -30,13 +32,13 @@ app.use((_req, res) => res.status(statusCodes.notFound).send({ message: 'Зап�
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
-  if (err.name === 'ValidationError') {
-    res.status(statusCodes.badRequest).send({ message: 'Указаны некорректные данные' });
+  if (err.name === 'DocumentNotFoundError') {
+    res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
     return;
   }
 
-  if (err.name === 'CastError') {
-    res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
+  if (err.name === 'CastError' || err.name === 'ValidationError') {
+    res.status(statusCodes.badRequest).send({ message: 'Указаны некорректные данные' });
     return;
   }
 

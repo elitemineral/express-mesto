@@ -1,5 +1,4 @@
 const Card = require('../models/card');
-const { statusCodes } = require('../utils/constants');
 
 module.exports.getCards = (_req, res, next) => {
   Card.find({})
@@ -30,14 +29,8 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
-    .then((card) => {
-      if (!card) {
-        res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
-        return;
-      }
-
-      res.send({ message: 'Пост удалён' });
-    })
+    .orFail()
+    .then(() => res.send({ message: 'Пост удалён' }))
     .catch((err) => next(err));
 };
 
@@ -47,15 +40,9 @@ module.exports.addLike = (req, res, next) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
+    .orFail()
     .populate(['owner', 'likes'])
-    .then((card) => {
-      if (!card) {
-        res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
-        return;
-      }
-
-      res.send(card);
-    })
+    .then((card) => res.send(card))
     .catch((err) => next(err));
 };
 
@@ -65,14 +52,8 @@ module.exports.deleteLike = (req, res, next) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
+    .orFail()
     .populate(['owner', 'likes'])
-    .then((card) => {
-      if (!card) {
-        res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
-        return;
-      }
-
-      res.send(card);
-    })
+    .then((card) => res.send(card))
     .catch((err) => next(err));
 };
