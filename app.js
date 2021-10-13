@@ -6,6 +6,7 @@ const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 
 const { statusCodes } = require('./utils/constants');
+const UnauthorizedError = require('./errors/UnauthorizedError');
 
 const { PORT = 3000 } = process.env;
 
@@ -32,6 +33,11 @@ app.use((_req, res) => res.status(statusCodes.notFound).send({ message: 'Зап�
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
+  if (err instanceof UnauthorizedError) {
+    res.status(err.statusCode).send({ message: err.message });
+    return;
+  }
+
   if (err.name === 'DocumentNotFoundError') {
     res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
     return;
@@ -42,7 +48,7 @@ app.use((err, _req, res, _next) => {
     return;
   }
 
-  res.status(statusCodes.serverError).send({ message: 'На сервере произошла ошибка' });
+  res.status(statusCodes.serverError).send({ message: err.message });
 });
 
 app.listen(PORT, () => {

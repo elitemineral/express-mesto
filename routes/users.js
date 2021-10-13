@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const {
+  login,
   getUser,
   getUsers,
   createUser,
@@ -7,6 +8,7 @@ const {
   setUserAvatar,
 } = require('../controllers/users');
 
+router.get('/sign-in', login);
 router.get('/users/:userId', getUser);
 router.get('/users', getUsers);
 router.post('/users', createUser);
