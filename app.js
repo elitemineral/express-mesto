@@ -2,11 +2,21 @@ const express = require('express');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 
+const {
+  loginInfoValidator,
+  newUserInfoValidator,
+} = require('./utils/requestValidators');
+
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 
+const auth = require('./middlewares/auth');
+const errors = require('./middlewares/celebrateErrorHandler');
+
+const { login, createUser } = require('./controllers/users');
 const { statusCodes } = require('./utils/constants');
-const UnauthorizedError = require('./errors/UnauthorizedError');
+
+const NotFoundError = require('./errors/NotFoundError');
 
 const { PORT = 3000 } = process.env;
 
@@ -20,35 +30,35 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, _res, next) => {
-  req.user = {
-    _id: '614f48a5ef07e86f0b1f8100',
-  };
+app.post('/sign-in', loginInfoValidator(), login);
+app.post('/sign-up', newUserInfoValidator(), createUser);
 
-  next();
-});
+app.use('/', auth, usersRouter, cardsRouter, (_req, _res, next) => next());
+app.use((_req, _res, next) => next(new NotFoundError('Запрашиваемая страница не найдена')));
 
-app.use('/', usersRouter, cardsRouter, (_req, _res, next) => next());
-app.use((_req, res) => res.status(statusCodes.notFound).send({ message: 'Запрашиваемая страница не найдена' }));
+app.use(errors);
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
-  if (err instanceof UnauthorizedError) {
-    res.status(err.statusCode).send({ message: err.message });
-    return;
-  }
-
-  if (err.name === 'DocumentNotFoundError') {
-    res.status(statusCodes.notFound).send({ message: 'Запрашиваемый элемент не найден' });
-    return;
-  }
-
   if (err.name === 'CastError' || err.name === 'ValidationError') {
-    res.status(statusCodes.badRequest).send({ message: 'Указаны некорректные данные' });
+    res.status(statusCodes.badRequest).send({ message: err.message });
     return;
   }
 
-  res.status(statusCodes.serverError).send({ message: err.message });
+  if (err.name === 'MongoServerError' && err.code === 11000) {
+    res.status(statusCodes.duplicateError).send({ message: 'Пользователь с таким email уже существует' });
+    return;
+  }
+
+  const { statusCode = statusCodes.serverError, message } = err;
+
+  res
+    .status(statusCode)
+    .send({
+      message: statusCode === statusCodes.serverError
+        ? 'На сервере произошла ошибка'
+        : message,
+    });
 });
 
 app.listen(PORT, () => {

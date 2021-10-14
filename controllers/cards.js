@@ -1,10 +1,14 @@
 const Card = require('../models/card');
+const ForbiddenError = require('../errors/ForbiddenError');
+const NotFoundError = require('../errors/NotFoundError');
+
+const cardNotFoundError = new NotFoundError('Карточка не найдена');
 
 module.exports.getCards = (_req, res, next) => {
   Card.find({})
     .populate(['owner', 'likes'])
     .then((cards) => res.send(cards))
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.createCard = (req, res, next) => {
@@ -24,14 +28,21 @@ module.exports.createCard = (req, res, next) => {
   })
     .then((card) => card.populate(['owner', 'likes']))
     .then((populatedCard) => res.send(populatedCard))
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.params.cardId)
-    .orFail()
-    .then(() => res.send({ message: 'Пост удалён' }))
-    .catch((err) => next(err));
+  Card.findById(req.params.cardId)
+    .orFail(cardNotFoundError)
+    .then((card) => {
+      if (card.owner.toString() === req.user._id) {
+        Card.deleteOne({ _id: card._id })
+          .then(res.send({ message: 'Пост удалён' }));
+      } else {
+        throw new ForbiddenError('Запрещено удалять карточки чужих пользователей');
+      }
+    })
+    .catch(next);
 };
 
 module.exports.addLike = (req, res, next) => {
@@ -40,10 +51,10 @@ module.exports.addLike = (req, res, next) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
-    .orFail()
+    .orFail(cardNotFoundError)
     .populate(['owner', 'likes'])
     .then((card) => res.send(card))
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.deleteLike = (req, res, next) => {
@@ -52,8 +63,8 @@ module.exports.deleteLike = (req, res, next) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
-    .orFail()
+    .orFail(cardNotFoundError)
     .populate(['owner', 'likes'])
     .then((card) => res.send(card))
-    .catch((err) => next(err));
+    .catch(next);
 };

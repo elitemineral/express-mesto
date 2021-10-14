@@ -1,13 +1,18 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const NotFoundError = require('../errors/NotFoundError');
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
   User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key');
+      const token = jwt.sign(
+        { _id: user._id },
+        'some-secret-key',
+        { expiresIn: 3600 * 24 * 7 },
+      );
 
       res.cookie('jwt', token, {
         maxAge: 3600000 * 24 * 7,
@@ -17,17 +22,24 @@ module.exports.login = (req, res, next) => {
     .catch(next);
 };
 
-module.exports.getUser = (req, res, next) => {
-  User.findById(req.params.userId)
+module.exports.me = (req, res, next) => {
+  User.findById(req.user._id)
     .orFail()
     .then((user) => res.send(user))
-    .catch((err) => next(err));
+    .catch(next);
+};
+
+module.exports.getUser = (req, res, next) => {
+  User.findById(req.params.userId)
+    .orFail(new NotFoundError('Пользователь не найден'))
+    .then((user) => res.send(user))
+    .catch(next);
 };
 
 module.exports.getUsers = (_req, res, next) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.createUser = (req, res, next) => {
@@ -43,7 +55,7 @@ module.exports.createUser = (req, res, next) => {
       email: user.email,
       _id: user._id,
     }))
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.setUserInfo = (req, res, next) => {
@@ -59,16 +71,19 @@ module.exports.setUserInfo = (req, res, next) => {
   )
     .orFail()
     .then((user) => res.send(user))
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.setUserAvatar = (req, res, next) => {
   User.findByIdAndUpdate(
     req.user._id,
     { avatar: req.body.avatar },
-    { new: true },
+    {
+      new: true,
+      runValidators: true,
+    },
   )
     .orFail()
     .then((user) => res.send(user))
-    .catch((err) => next(err));
+    .catch(next);
 };

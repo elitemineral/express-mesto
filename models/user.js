@@ -1,3 +1,4 @@
+const validator = require('validator');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -19,11 +20,20 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
+    validate: {
+      // eslint-disable-next-line no-useless-escape
+      validator: (value) => /^https?:\/\/(www\.)*[\w\-.~:\/?#\[\]@!$&'\(\)*+,;=]+/.test(value),
+      message: (props) => `${props.value} некорректная ссылка`,
+    },
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
   email: {
     type: String,
-    required: true,
+    validate: {
+      validator: (value) => validator.isEmail(value),
+      message: (props) => `${props.value} некорректный email`,
+    },
+    required: [true, 'Email обязателен'],
     unique: true,
   },
   password: {
@@ -38,12 +48,14 @@ const userSchema = new mongoose.Schema({
 
 // eslint-disable-next-line func-names
 userSchema.statics.findUserByCredentials = function (email, password) {
+  const error = new UnauthorizedError('Неверные почта или пароль');
+
   return this.findOne({ email }).select('+password')
-    .orFail(new UnauthorizedError())
+    .orFail(error)
     .then((user) => bcrypt.compare(password, user.password)
       .then((matched) => {
         if (!matched) {
-          throw new UnauthorizedError();
+          throw error;
         }
 
         return user;
