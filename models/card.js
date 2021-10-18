@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
 const { dataModels } = require('../utils/constants');
 
 const cardSchema = new mongoose.Schema({
@@ -11,8 +12,7 @@ const cardSchema = new mongoose.Schema({
   link: {
     type: String,
     validate: {
-      // eslint-disable-next-line no-useless-escape
-      validator: (value) => /^https?:\/\/(www\.)*[\w\-.~:\/?#\[\]@!$&'\(\)*+,;=]+/.test(value),
+      validator: (value) => validator.isURL(value),
       message: (props) => `${props.value} некорректная ссылка`,
     },
     required: [true, 'Ссылка обязательна'],
@@ -25,7 +25,6 @@ const cardSchema = new mongoose.Schema({
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: dataModels.user,
-    required: true,
     default: [],
   }],
   createdAt: {

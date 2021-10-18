@@ -1,7 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
 const User = require('../models/user');
 const NotFoundError = require('../errors/NotFoundError');
+const ConflictError = require('../errors/ConflictError');
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
@@ -17,7 +19,7 @@ module.exports.login = (req, res, next) => {
       res.cookie('jwt', token, {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
-      }).end();
+      }).send({ message: 'Авторизация прошла успешно' });
     })
     .catch(next);
 };
@@ -55,7 +57,14 @@ module.exports.createUser = (req, res, next) => {
       email: user.email,
       _id: user._id,
     }))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'MongoServerError' && err.code === 11000) {
+        next(new ConflictError('Пользователь с таким email уже существует'));
+        return;
+      }
+
+      next(err);
+    });
 };
 
 module.exports.setUserInfo = (req, res, next) => {

@@ -6,11 +6,13 @@
     "dev": "nodemon app.js",
     "lint": "npx eslint ."
   },
-  "author": "",
+  "author": "Dmitriy Bogdanov",
+  "description": "Mesto backend",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "celebrate": "^15.0.0",
+    "cookie-parser": "^1.4.5",
     "express": "^4.17.1",
     "helmet": "^4.6.0",
     "joi": "^17.4.2",
